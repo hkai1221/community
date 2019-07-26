@@ -22,21 +22,21 @@ public class AuthorizeController {
     private GithubProvider githubProvider;
 
     @Value("${github.Client.id}")
-    private  String clientId;
+    private String clientId;
 
     @Value("${github.Client.secret}")
-    private  String clientSecret;
+    private String clientSecret;
 
     @Value("${github.Redirect.uri}")
-    private  String redirectUri;
+    private String redirectUri;
 
     @Autowired
     private UserMapper userMapper;
 
     @GetMapping("/callback")
-    public  String callback(@RequestParam(name="code") String code,
-                            @RequestParam(name="state") String state,
-                            HttpServletResponse response) {
+    public String callback(@RequestParam(name = "code") String code,
+                           @RequestParam(name = "state") String state,
+                           HttpServletResponse response) {
         AccessTokenDTO accessTokenDTO = new AccessTokenDTO();
         accessTokenDTO.setClient_id(clientId);
         accessTokenDTO.setClient_secret(clientSecret);
@@ -46,8 +46,8 @@ public class AuthorizeController {
         String accessToken = githubProvider.getAccessToken(accessTokenDTO);
         System.out.println(accessToken);
         GithubUser githubUser = githubProvider.getUser(accessToken);
-       // System.out.println(user.getName());
-        if(githubUser!=null){
+        // System.out.println(user.getName());
+        if (githubUser != null && githubUser.getId() != null) {
             //登录成功 写入cookie 和session
             System.out.println("登陆成功 写入cookie 和session");
             System.out.println(githubUser.getId());
@@ -59,14 +59,16 @@ public class AuthorizeController {
             user.setAccountId(String.valueOf(githubUser.getId()));
             user.setGmtCreate(System.currentTimeMillis());
             user.setGmtModified(user.getGmtCreate());
+            user.setBio(user.getBio());
+            user.setAvatarUrl(githubUser.getAvatar_url());
             userMapper.insert(user);
             //写入cookie
-            response.addCookie(new Cookie("token",token));
+            response.addCookie(new Cookie("token", token));
 
             //写入Session
             //request.getSession().setAttribute("user",githubUser);
             return "redirect:/";
-        }else {
+        } else {
             //登陆失败，重新登录
             System.out.println("登陆失败，重新登录");
             return "redirect:/";
